@@ -12,7 +12,7 @@
    - [**Section 1. Description**](#1-description)
    - [**Section 2. Installation**](#2-installation)
    - [**Section 3. Usage**](#3-usage)
-   - [**Section 3. License**](#4-license)
+   - [**Section 4. License**](#4-license)
   
 ## 1. Description
 

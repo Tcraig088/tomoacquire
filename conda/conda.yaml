@@ -1,5 +1,5 @@
 package:
-  name: tomobase
+  name: tomoacquire
   version: {{ version }}
 
 source:
@@ -21,36 +21,12 @@ requirements:
     - imageio
     - progress
 
-outputs:
-  - name: tomobase
-    requirements:
-      run:
-        - python >=3.10
-        - numpy
-        - matplotlib
-        - scipy
-        - imageio
-        - progress
-
-  - name: tomobase-minimal
-    requirements:
-      run:
-        - python >=3.10
-        - numpy
-        - matplotlib
-        - scipy
-        - imageio
-        - progress
-        - optional-package1
-        - optional-package2
-
 channels:
   - defaults
   - conda-forge
 
-
 about:
-  home: https://github.com/Tcraig088/tdtomonapari
+  home: https://github.com/Tcraig088/tomoacquire
   license: GPL3.0
   license_family: GPL
   summary: A library for running time-dependent tomography modules in napari
