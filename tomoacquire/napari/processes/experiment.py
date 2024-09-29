@@ -3,7 +3,8 @@ from qtpy.QtCore import Qt
 
 from tomobase.napari.components import CheckableComboBox, FileSaveDialog
 from tomoacquire.registration import TOMOACQUIRE_TILTSCHEMES
-   
+from tomobase.log import logger
+  
 class ExperimentWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -13,6 +14,8 @@ class ExperimentWidget(QWidget):
         self.label_maginification = QLabel('Magnification:')
         self.combobox_maginification = QComboBox()
         self.combobox_maginification.addItem('Select Magnification')
+        self.combobox_maginification.setCurrentIndex(0)
+        
         self.combobox_options = CheckableComboBox(self)
         self.combobox_options.addItem("Select Options")
         
@@ -22,6 +25,7 @@ class ExperimentWidget(QWidget):
         for key, value in TOMOACQUIRE_TILTSCHEMES.items():
             self.combobox_tiltscheme.addItem(key.lower())
         self.combobox_tiltscheme.setCurrentIndex(0)
+        self.widget_tiltscheme = None
         
         self.button_confirm = QPushButton('Confirm')
         
@@ -30,7 +34,7 @@ class ExperimentWidget(QWidget):
         self.layout.addWidget(self.label_maginification, 1, 0)
         self.layout.addWidget(self.combobox_maginification, 1, 1)
         self.layout.addWidget(self.combobox_options, 2, 0)
-        self.layout.addWidget(self.label_tiltscheme, 2, 0)
+        self.layout.addWidget(self.label_tiltscheme, 3, 0)
         self.layout.addWidget(self.combobox_tiltscheme, 3, 1)
         
         self.layout.addWidget(self.button_confirm, 5, 0)
@@ -38,20 +42,18 @@ class ExperimentWidget(QWidget):
         self.layout.setAlignment(Qt.AlignTop)
         self.setLayout(self.layout)
         
-    def on_combobox_change(self, index):
-        if self.combobox.currentText() == 'Custom':
-            self.connection_widget.setVisible(True)
-            self.button_save.setVisible(True)
-        else:
-            self.connection_widget.setVisible(False)
-            self.button_save.setVisible(False)
-    
-    def on_connect(self):
-        #TODO: connect to microscope
-        pass
-    
-    def on_save(self):
-        #TODO: save connection
-        pass
-    
+        self.combobox_tiltscheme.currentIndexChanged.connect(self.onTiltschemeChange)
+        
+    def onTiltschemeChange(self, index):
+        if self.widget_tiltscheme is not None:
+            self.layout.removeWidget(self.widget_tiltscheme)
+            self.widget_tiltscheme.deleteLater()
+            self.widget_tiltscheme = None
+            
+        if self.combobox_tiltscheme.currentIndex() > 0:
+            tiltscheme = TOMOACQUIRE_TILTSCHEMES[self.combobox_tiltscheme.currentText().upper()]
+            self.widget_tiltscheme = tiltscheme.widget()
+            logger.debug(f"Widget: {self.widget_tiltscheme}")
+            self.layout.addWidget(self.widget_tiltscheme, 4, 0, 1, 3)
+        
     

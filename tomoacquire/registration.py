@@ -28,7 +28,7 @@ class TiltSchemeItem():
     
     @property
     def controller(self):
-        return self._entity
+        return self._controller
 
     @property
     def widget(self):
@@ -75,6 +75,9 @@ class TiltSchemeItemDict():
             self._items += 1
 
 
+    def __getitem__(self, key):
+        return self._dict[key]
+    
     def update(self):
         """
         Inspects the 'tiltseries' folder in the 'plugins' folder of the 'tomoacquire' package
@@ -95,34 +98,36 @@ class TiltSchemeItemDict():
             for filename in files:
                 if filename.endswith('.py'):
                     module_path = os.path.relpath(os.path.join(root, filename), start=tomoacquire_path)
-                    module_name = module_path.replace(os.sep, '.')[:-3]
+                    module_name = 'tomoacquire.'+ module_path.replace(os.sep, '.')[:-3]
+                    logger.info(f"Importing {module_name}, {module_path}")
                     module = importlib.import_module(module_name)
                     for name, obj in inspect.getmembers(module, inspect.isclass):
                         logger.info(f"{obj}")
                         if hasattr(obj, attribute_name):
                             logger.info(f"Registering {name} as a TiltScheme")
-                            self.append(**{obj.tomoacquire_name: obj})
+                            self.append(obj.tomoacquire_name,obj)
          
         
-    def append(self, **kwargs):
+    def append(self, key, value):
         """
         Adds a named data type to the library if it is not already present. Example TPMPBASE_DATATYPES.append(NEWDATA = NewDataWidget). will add a new datatype named NEWDATA to the library and will registed a widget for inspecting that datatype napari.
         
         Args:
             **kwargs: A dictionary of named data types to add to the library
         """
-        for key, value in kwargs.items():
-            if key in self._dict:
-                if self._dict[key].widget is None:
-                    self._dict[key]._widget = value
-                else:
-                    self._dict[key]._controller = value 
+        if key in self._dict:
+            if self._dict[key].widget is None:
+                self._dict[key]._widget = value
+            elif self._dict[key].controller is None:
+                self._dict[key]._controller = value 
             else:
-                if isinstance(value, type) and issubclass(value, QWidget):
-                    self._dict[key] = TiltSchemeItem(self._items, widget=value)
-                else:
-                    self._dict[key] = TiltSchemeItem(self._items, controller=value)
-                self._items += 1
+                logger.warning(f"Data Type '{key}' has already been registered in the library.")
+        else:
+            if isinstance(value, type) and issubclass(value, QWidget):
+                self._dict[key] = TiltSchemeItem(self._items, widget=value)
+            else:
+                self._dict[key] = TiltSchemeItem(self._items, controller=value)
+            self._items += 1
                 
     def loc(self, index):
         """
