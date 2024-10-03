@@ -9,7 +9,7 @@ from tomoacquire.plugins.hooks import tomoacquire_hook_tiltscheme
 
 
 @tomoacquire_hook_tiltscheme('INCREMENTAL')
-class GRSWidget(CollapsableWidget):
+class IncrementalWidget(CollapsableWidget):
     def __init__(self, parent=None):
         super().__init__('Incremental TiltScheme', parent)
         
@@ -43,14 +43,14 @@ class Incremental(Tiltscheme):
         self.angle_start = angle_start
         self.angle_end = angle_end  
         self.step = step
+        self._vectorized_angles = np.vectorize(self.get_angle())
         
-        self.angle = self.angle_start
-                
     def get_angle(self):
-        self.angle += self.step
+        angle = self.angle_start (self.index*self.step)
         self.index += 1
-        if self.angle + self.step > self.angle_end:
+        if angle + self.step > self.angle_end:
             self.isfinished = True
-        return self.angle
+        return angle
     
-    
+    def get_angle_array(self, indices):
+        return self.angle_start + (indices*self.step)

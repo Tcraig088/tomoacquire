@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+import numpy as  np
 class Tiltscheme(ABC):
     """Base Class for a Tilt Scheme Plugin.
 
@@ -19,5 +19,11 @@ class Tiltscheme(ABC):
         return self._isfinished
     
     @abstractmethod
-    def get_angle(self):
+    def get_angle(self, index=None):
         pass
+    
+    @abstractmethod
+    def get_angle_array(self, indices):
+        pass  
+    
+    
