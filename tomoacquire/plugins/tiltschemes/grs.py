@@ -50,8 +50,8 @@ class GRS(Tiltscheme):
     def get_angle(self):
         angle_rad = np.mod(self.index*self.gr*self.range, self.range) + np.radians(self.angle_min)
         self.index += 1
-        return np.degrees(angle_rad)
+        return np.round(np.degrees(angle_rad),2)
     
     def get_angle_array(self, indices):
         angles = np.mod(indices*self.gr*self.range, self.range) + np.radians(self.angle_min)
-        return np.degrees(angles)
+        return np.round(np.degrees(angles),2)

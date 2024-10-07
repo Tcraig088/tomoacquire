@@ -43,10 +43,10 @@ class Incremental(Tiltscheme):
         self.angle_start = angle_start
         self.angle_end = angle_end  
         self.step = step
-        self._vectorized_angles = np.vectorize(self.get_angle())
+
         
     def get_angle(self):
-        angle = self.angle_start (self.index*self.step)
+        angle = self.angle_start + (self.index*self.step)
         self.index += 1
         if angle + self.step > self.angle_end:
             self.isfinished = True
