@@ -1,3 +1,3 @@
 from tomoacquire import napari
-from tomoacquire.registration import TOMOACQUIRE_TILTSCHEMES
+from tomoacquire.registration import TOMOBASE_TILTSCHEMES
 from tomoacquire.plugins import tiltschemes

@@ -2,7 +2,7 @@ from qtpy.QtWidgets import QWidget, QComboBox, QLabel, QHBoxLayout, QLineEdit, Q
 from qtpy.QtCore import Qt
 
 from tomobase.napari.components import CheckableComboBox, FileSaveDialog
-from tomoacquire.registration import TOMOACQUIRE_TILTSCHEMES
+from tomobase.registrations import TOMOBASE_TILTSCHEMES
 from tomobase.log import logger
   
 class ExperimentWidget(QWidget):
@@ -22,7 +22,7 @@ class ExperimentWidget(QWidget):
         self.label_tiltscheme = QLabel('Tilt Scheme:')  
         self.combobox_tiltscheme = QComboBox()
         self.combobox_tiltscheme.addItem('Select Tilt Scheme')
-        for key, value in TOMOACQUIRE_TILTSCHEMES.items():
+        for key, value in TOMOBASE_TILTSCHEMES.items():
             self.combobox_tiltscheme.addItem(key.lower())
         self.combobox_tiltscheme.setCurrentIndex(0)
         self.widget_tiltscheme = None
@@ -51,7 +51,7 @@ class ExperimentWidget(QWidget):
             self.widget_tiltscheme = None
             
         if self.combobox_tiltscheme.currentIndex() > 0:
-            tiltscheme = TOMOACQUIRE_TILTSCHEMES[self.combobox_tiltscheme.currentText().upper()]
+            tiltscheme = TOMOBASE_TILTSCHEMES[self.combobox_tiltscheme.currentText().upper()]
             self.widget_tiltscheme = tiltscheme.widget()
             logger.debug(f"Widget: {self.widget_tiltscheme}")
             self.layout.addWidget(self.widget_tiltscheme, 4, 0, 1, 3)

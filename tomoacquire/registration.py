@@ -153,5 +153,5 @@ class TiltSchemeItemDict():
         """
         return self._dict.items()
     
-TOMOACQUIRE_TILTSCHEMES = TiltSchemeItemDict()   
-TOMOACQUIRE_TILTSCHEMES.update()    
+TOMOBASE_TILTSCHEMES = TiltSchemeItemDict()   
+TOMOBASE_TILTSCHEMES.update()    
