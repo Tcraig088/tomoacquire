@@ -2,7 +2,7 @@ from qtpy.QtWidgets import QWidget, QComboBox, QLabel, QHBoxLayout, QLineEdit, Q
 from qtpy.QtCore import Qt
 
 from tomobase.napari.components import CheckableComboBox, FileSaveDialog
-from tomobase.registrations import TOMOBASE_TILTSCHEMES
+from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
 from tomobase.log import logger
   
 class ExperimentWidget(QWidget):
