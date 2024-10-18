@@ -16,6 +16,7 @@ class ExperimentWidget(QWidget):
         self.combobox_maginification.addItem('Select Magnification')
         self.combobox_maginification.setCurrentIndex(0)
         
+        self.label_options = QLabel('Options:')
         self.combobox_options = CheckableComboBox(self)
         self.combobox_options.addItem("Select Options")
         
@@ -33,7 +34,8 @@ class ExperimentWidget(QWidget):
         self.layout.addWidget(self.filedialog, 0, 0, 1, 3)
         self.layout.addWidget(self.label_maginification, 1, 0)
         self.layout.addWidget(self.combobox_maginification, 1, 1)
-        self.layout.addWidget(self.combobox_options, 2, 0)
+        self.layout.addWidget(self.label_options, 2, 1)
+        self.layout.addWidget(self.combobox_options, 2, 1)
         self.layout.addWidget(self.label_tiltscheme, 3, 0)
         self.layout.addWidget(self.combobox_tiltscheme, 3, 1)
         

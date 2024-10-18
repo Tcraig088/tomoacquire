@@ -5,3 +5,7 @@
 # Ignore Python cache files and directories
 __pycache__/
 *.pyc
+
+# Ignore all files and subdirectories in the microscopes folder
+microscopes/*
+!microscopes/

@@ -1,11 +1,14 @@
 from qtpy.QtWidgets import QWidget, QComboBox, QLabel, QHBoxLayout, QLineEdit, QVBoxLayout, QPushButton, QGridLayout, QDoubleSpinBox
 from qtpy.QtCore import Qt
-
+import importlib
+import inspect
+import json
+import os
 from tomobase.napari.components import CheckableComboBox, CollapsableWidget
 
 class ScanSettingsWidget(CollapsableWidget):
     def __init__(self, title, parent):
-        super().__init__(parent, title)
+        super().__init__(title, parent)
         self.label_dwell_time = QLabel('Dwell Time (\u03BCs):')
         self.double_spinbox_dwell_time = QDoubleSpinBox()
         self.double_spinbox_dwell_time.setSingleStep(0.01)
@@ -28,9 +31,9 @@ class ScanSettingsWidget(CollapsableWidget):
         self.setLayout(self.layout)
         
         
-class CustomConnectionWidget(QWidget):
+class CustomConnectionWidget(CollapsableWidget):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__('Microscope Settings', parent)
         
         self.label_name = QLabel('Name:')
         self.lineedit_name = QLineEdit('Microscope')
@@ -40,7 +43,8 @@ class CustomConnectionWidget(QWidget):
         self.lineedit_request = QLineEdit('50030')
         self.label_socket_reply = QLabel('Reply Socket:')
         self.lineedit_socket_reply = QLineEdit('50031')
-        
+        self.button_save = QPushButton('Save')
+
         self.layout = QGridLayout()
         self.layout.addWidget(self.label_name, 0, 0)
         self.layout.addWidget(self.lineedit_name, 0, 1)
@@ -50,9 +54,42 @@ class CustomConnectionWidget(QWidget):
         self.layout.addWidget(self.lineedit_request, 1, 1)
         self.layout.addWidget(self.label_socket_reply, 1, 2)
         self.layout.addWidget(self.lineedit_socket_reply, 1, 3)
+        self.layout.addWidget(self.button_save, 2, 0, 1, 4)
         
         self.layout.setAlignment(Qt.AlignLeft)
         self.setLayout(self.layout)
+
+    def clear(self):
+        self.lineedit_name.clear()
+        self.lineedit_connection.clear()
+        self.lineedit_request.clear()
+        self.lineedit_socket_reply.clear()
+
+    def setDefaults(self):
+        self.clear()
+        self.lineedit_name.setText('Microscope')
+        self.lineedit_connection.setText('localhost')
+        self.lineedit_request.setText('50030')
+        self.lineedit_socket_reply.setText('50031')
+        self.button_save.setVisible(True)
+
+        self.lineedit_name.setReadOnly(False)
+        self.lineedit_connection.setReadOnly(False)
+        self.lineedit_request.setReadOnly(False)
+        self.lineedit_socket_reply.setReadOnly(False)
+
+    def setFromJSON(self, data):
+        self.clear()
+        self.lineedit_name.setText(data['name'])
+        self.lineedit_connection.setText(data['connection'])
+        self.lineedit_request.setText(data['request'])
+        self.lineedit_socket_reply.setText(data['subscribe'])
+        self.button_save.setVisible(False)
+
+        self.lineedit_name.setReadOnly(True)
+        self.lineedit_connection.setReadOnly(True)
+        self.lineedit_request.setReadOnly(True)
+        self.lineedit_socket_reply.setReadOnly(True)
         
 class InstrumentWidget(QWidget):
     def __init__(self, parent=None):
@@ -60,12 +97,12 @@ class InstrumentWidget(QWidget):
         self.combobox = QComboBox()
         #TODO: check for registed microscope configs
         self.combobox.addItem('Select Microscope')
+        self.updateMicroscopes()
         self.combobox.addItem('Custom')
         self.connection_widget = CustomConnectionWidget()
         self.button_connect = QPushButton('Connect')
-        self.button_save = QPushButton('Save')
+        
         self.connection_widget.setVisible(False)
-        self.button_save.setVisible(False)
         
         self.combobox_options = CheckableComboBox(self)
         self.combobox_options.addItem("Select Options")
@@ -82,11 +119,10 @@ class InstrumentWidget(QWidget):
         self.button_confirm = QPushButton('Confirm')   
         
         self.layout = QGridLayout()
-        self.layout.addWidget(self.combobox, 1, 0)
+        self.layout.addWidget(self.combobox, 0, 0)
         self.layout.addWidget(self.connection_widget, 1, 0, 1, 2)
         self.layout.addWidget(self.button_connect, 2, 0)
-        self.layout.addWidget(self.button_save, 2, 1)
-        
+
         self.layout.addWidget(self.combobox_options, 3, 0)
         self.layout.addWidget(self.combobox_detectors, 4, 0)
         
@@ -99,24 +135,41 @@ class InstrumentWidget(QWidget):
         self.setLayout(self.layout)
         
         self.combobox.setCurrentIndex(0)
-        self.combobox.currentIndexChanged.connect(self.on_combobox_change)
-        self.button_connect.clicked.connect(self.on_connect)
+        self.combobox.currentIndexChanged.connect(self.onMicroscopeChange)
+        self.button_connect.clicked.connect(self.onConnect)
         
-        
-    def on_combobox_change(self, index):
-        if self.combobox.currentText() == 'Custom':
+    def updateMicroscopes(self):   
+        spec = importlib.util.find_spec('tomoacquire')
+        path = os.path.dirname(spec.origin)
+        path = os.path.join(path, 'microscopes')
+
+        for files in os.listdir(path):
+            if files.endswith('.json'):
+                with open(os.path.join(path, files)) as f:
+                    data = json.load(f)
+                    self.combobox.addItem(data['name'])
+
+    def onMicroscopeChange(self, index):
+        if self.combobox.currentText() != 'Select Microscope':
+            if self.combobox.currentText() == 'Custom':
+                self.connection_widget.setDefaults()
+            else:
+                spec = importlib.util.find_spec('tomoacquire')
+                path = os.path.dirname(spec.origin)
+                path = os.path.join(path, 'microscopes')
+                filename = self.combobox.currentText().replace(' ','_') + '.json'
+                path = os.path.join(path, filename)
+                with open(path) as f:
+                    data = json.load(f)
+                    self.connection_widget.setFromJSON(data)
             self.connection_widget.setVisible(True)
-            self.button_save.setVisible(True)
         else:
             self.connection_widget.setVisible(False)
-            self.button_save.setVisible(False)
-    
-    def on_connect(self):
+
+    def onConnect(self):
         #TODO: connect to microscope
         pass
     
-    def on_save(self):
-        #TODO: save connection
-        pass
+
     
     
