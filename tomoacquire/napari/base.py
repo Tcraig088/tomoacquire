@@ -18,7 +18,7 @@ class AcquistionMenuWidget(QMenu):
         
     def on_instrument_triggered(self):
         if self.viewer is not None:
-            self.viewer.window.add_dock_widget(InstrumentWidget(), area='right', name='Instrument Settings')
+            self.viewer.window.add_dock_widget(InstrumentWidget(self.viewer), area='right', name='Instrument Settings')
 
     def on_experiment_triggered(self):
         if self.viewer is not None:

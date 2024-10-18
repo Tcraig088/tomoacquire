@@ -5,6 +5,11 @@ import inspect
 import json
 import os
 from tomobase.napari.components import CheckableComboBox, CollapsableWidget
+import numpy as np
+
+
+from tomobase import TOMOBASE_DATATYPES
+from tomoacquire.scanwindow import ScanWindow
 
 class ScanSettingsWidget(CollapsableWidget):
     def __init__(self, title, parent):
@@ -123,9 +128,10 @@ class CustomConnectionWidget(CollapsableWidget):
             os.remove(path)
 
 class InstrumentWidget(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, viewer=None, parent=None):
         super().__init__(parent)
         self.combobox = QComboBox()
+        self.viewer = viewer
         #TODO: check for registed microscope configs
         self.updateMicroscopes()
 
@@ -169,6 +175,7 @@ class InstrumentWidget(QWidget):
         self.button_connect.clicked.connect(self.onConnect)
         self.connection_widget.button_save.clicked.connect(self.onSave)
         self.connection_widget.button_delete.clicked.connect(self.onDelete)
+        self.button_confirm.clicked.connect(self.onConfirm) 
 
     def updateMicroscopes(self):  
         self.combobox.clear()
@@ -202,10 +209,15 @@ class InstrumentWidget(QWidget):
         else:
             self.connection_widget.setVisible(False)
 
-    def onConnect(self):
-        #TODO: connect to microscope
+    def onConnect(self):    
         pass
-    
+
+    def onConfirm(self):
+        data = np.zeros((1024,1024, 2))
+        scan_window = ScanWindow(data, 1.0)
+        value = scan_window._to_napari_layer(astuple=True)
+        self.viewer._add_layer_from_data(*value)
+
     def onSave(self):
         """
         Save the current connection settings to a json file and update the combobox

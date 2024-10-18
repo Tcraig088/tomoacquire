@@ -6,7 +6,7 @@ from qtpy.QtWidgets import QWidget, QVBoxLayout, QLabel, QCheckBox, QComboBox, Q
 from qtpy.QtCore import Qt
 
 
-class SinogramDataWidget(CollapsableWidget):
+class ScanWindowDataWidget(CollapsableWidget):
     def __init__(self, viewer: 'napari.viewer.Viewer', parent=None):
         super().__init__('Details', parent)
         self.viewer = viewer
@@ -26,7 +26,7 @@ class SinogramDataWidget(CollapsableWidget):
         self.label_magnification = QLabel('Magnification:')
         self.label_magnification_entry = QLabel(str(layer.metadata['ct metadata']['magnification']))
         self.label_angle = QLabel('Current Angel:')
-        self.label_angle_entry = QLabel(str(np.round(layer.metadata['ct metadata']['angle'][0],2)))
+        self.label_angle_entry = QLabel(str(np.round(layer.metadata['ct metadata']['angle'],2)))
         self.label_dosage = QLabel('Dosage:')
         self.label_dosage_entry = QLabel(str(layer.metadata['ct metadata']['dosage']))
         self.label_images_acquired = QLabel('Images Acquired:') 
