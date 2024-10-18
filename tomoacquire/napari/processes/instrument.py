@@ -44,6 +44,7 @@ class CustomConnectionWidget(CollapsableWidget):
         self.label_socket_reply = QLabel('Reply Socket:')
         self.lineedit_socket_reply = QLineEdit('50031')
         self.button_save = QPushButton('Save')
+        self.button_delete = QPushButton('Delete')
 
         self.layout = QGridLayout()
         self.layout.addWidget(self.label_name, 0, 0)
@@ -54,8 +55,9 @@ class CustomConnectionWidget(CollapsableWidget):
         self.layout.addWidget(self.lineedit_request, 1, 1)
         self.layout.addWidget(self.label_socket_reply, 1, 2)
         self.layout.addWidget(self.lineedit_socket_reply, 1, 3)
-        self.layout.addWidget(self.button_save, 2, 0, 1, 4)
-        
+        self.layout.addWidget(self.button_save, 2, 0)
+        self.layout.addWidget(self.button_delete, 2,1)
+
         self.layout.setAlignment(Qt.AlignLeft)
         self.setLayout(self.layout)
 
@@ -71,12 +73,9 @@ class CustomConnectionWidget(CollapsableWidget):
         self.lineedit_connection.setText('localhost')
         self.lineedit_request.setText('50030')
         self.lineedit_socket_reply.setText('50031')
-        self.button_save.setVisible(True)
+        self.button_save.setText('Save')
+        self.button_delete.setVisible(False)
 
-        self.lineedit_name.setReadOnly(False)
-        self.lineedit_connection.setReadOnly(False)
-        self.lineedit_request.setReadOnly(False)
-        self.lineedit_socket_reply.setReadOnly(False)
 
     def setFromJSON(self, data):
         self.clear()
@@ -84,21 +83,52 @@ class CustomConnectionWidget(CollapsableWidget):
         self.lineedit_connection.setText(data['connection'])
         self.lineedit_request.setText(data['request'])
         self.lineedit_socket_reply.setText(data['subscribe'])
-        self.button_save.setVisible(False)
+        self.button_save.setText('Update')
+        self.button_delete.setVisible(True)
 
-        self.lineedit_name.setReadOnly(True)
-        self.lineedit_connection.setReadOnly(True)
-        self.lineedit_request.setReadOnly(True)
-        self.lineedit_socket_reply.setReadOnly(True)
+
         
+    def onSave(self):
+        data = {}
+        data['name'] = self.lineedit_name.text()
+        data['connection'] = self.lineedit_connection.text()
+        data['request'] = self.lineedit_request.text()
+        data['subscribe'] = self.lineedit_socket_reply.text()
+        
+        spec = importlib.util.find_spec('tomoacquire')
+        path = os.path.dirname(spec.origin)
+        path = os.path.join(path, 'microscopes')
+        filename = data['name'].replace(' ','_') + '.json'
+        path = os.path.join(path, filename)
+
+        if os.path.exists(path):
+            os.remove(path)
+        with open(path, 'w') as f:
+            json.dump(data, f)
+
+    def onDelete(self):
+        data = {}
+        data['name'] = self.lineedit_name.text()
+        data['connection'] = self.lineedit_connection.text()
+        data['request'] = self.lineedit_request.text()
+        data['subscribe'] = self.lineedit_socket_reply.text()
+
+        spec = importlib.util.find_spec('tomoacquire')
+        path = os.path.dirname(spec.origin)
+        path = os.path.join(path, 'microscopes')
+        filename = data['name'].replace(' ','_') + '.json'
+        path = os.path.join(path, filename)
+
+        if os.path.exists(path):
+            os.remove(path)
+
 class InstrumentWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.combobox = QComboBox()
         #TODO: check for registed microscope configs
-        self.combobox.addItem('Select Microscope')
         self.updateMicroscopes()
-        self.combobox.addItem('Custom')
+
         self.connection_widget = CustomConnectionWidget()
         self.button_connect = QPushButton('Connect')
         
@@ -137,8 +167,12 @@ class InstrumentWidget(QWidget):
         self.combobox.setCurrentIndex(0)
         self.combobox.currentIndexChanged.connect(self.onMicroscopeChange)
         self.button_connect.clicked.connect(self.onConnect)
-        
-    def updateMicroscopes(self):   
+        self.connection_widget.button_save.clicked.connect(self.onSave)
+        self.connection_widget.button_delete.clicked.connect(self.onDelete)
+
+    def updateMicroscopes(self):  
+        self.combobox.clear()
+        self.combobox.addItem('Select Microscope') 
         spec = importlib.util.find_spec('tomoacquire')
         path = os.path.dirname(spec.origin)
         path = os.path.join(path, 'microscopes')
@@ -148,6 +182,7 @@ class InstrumentWidget(QWidget):
                 with open(os.path.join(path, files)) as f:
                     data = json.load(f)
                     self.combobox.addItem(data['name'])
+        self.combobox.addItem('Custom')
 
     def onMicroscopeChange(self, index):
         if self.combobox.currentText() != 'Select Microscope':
@@ -159,9 +194,10 @@ class InstrumentWidget(QWidget):
                 path = os.path.join(path, 'microscopes')
                 filename = self.combobox.currentText().replace(' ','_') + '.json'
                 path = os.path.join(path, filename)
-                with open(path) as f:
-                    data = json.load(f)
-                    self.connection_widget.setFromJSON(data)
+                if filename != '.json':
+                    with open(path) as f:
+                        data = json.load(f)
+                        self.connection_widget.setFromJSON(data)
             self.connection_widget.setVisible(True)
         else:
             self.connection_widget.setVisible(False)
@@ -170,6 +206,18 @@ class InstrumentWidget(QWidget):
         #TODO: connect to microscope
         pass
     
+    def onSave(self):
+        """
+        Save the current connection settings to a json file and update the combobox
+        """
+        self.connection_widget.onSave()
+        self.updateMicroscopes()
 
+    def onDelete(self):
+        """
+        Delete the current connection settings and update the combobox
+        """
+        self.connection_widget.onDelete()
+        self.updateMicroscopes()
     
     
