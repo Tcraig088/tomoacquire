@@ -47,10 +47,12 @@ class Microscope():
             logger.warning(f'Already connected to {self.name}. Connection refused.')
             return None
         self.isconnected = True
-        tomop.server(self.address, self.request, self.subscribe)
+        address_request = "tcp://" + self.address + ":" + self.request
+        address_subscribe = "tcp://" + self.address + ":" + self.subscribe
+        self.serv = tomop.server("Microscope", address_request, address_subscribe)
 
 
     def disconnect(self):
-        tomop.server(self.address, self.request, self.subscribe)
+        self.serv.close()
         
 TOMOACQUIRE_MICROSCOPE = Microscope()
