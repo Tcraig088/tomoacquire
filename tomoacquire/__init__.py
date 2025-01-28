@@ -1,1 +1,0 @@
-from tomoacquire import napari
