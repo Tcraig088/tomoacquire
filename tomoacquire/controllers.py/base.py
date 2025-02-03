@@ -1,4 +1,3 @@
-import temscript
 import time
 import enum
 from tomobase.log import logger
@@ -6,27 +5,20 @@ from tomoacquire.scanwindow import ScanWindow
 from threading import Thread
 import numpy as np
 
+from tomoacquire.controllers.acquisition import AcquisitionController
+from tomoacquire.controllers.stage import StageController
+
 class MicroscopeState(enum.Enum):
     Connected = 0
     Disconnected = 1
     Callibration = 2
     Tomography = 3
 
-           
-class AcquisitionController():
-    def __init__(self, microscope):
-        self.detectors = []
-        self._isscan = True
-        
-    @property
-    def isscan(self):
-        return self._isscan
-    
-    @isscan.setter
-    def isscan(self, isscan):
-        self._isscan = isscan
 
-class Controller():
+
+
+
+class Controller(AcquisitionController, StageController):
     def __init__(self, file):
         
         filename = file
@@ -37,19 +29,16 @@ class Controller():
         microscope_class = microscopes.get_microscope(json['Microscope Type'])
         self.microscope = microscope_class(json['address'], json['reply port'], json['subscribe port'])
         
+        AcquisitionController.__init__(self, self.microscope)
+        StageController.__init__(self, self.microscope)
+        
         self._state = MicroscopeState.Connected
         self.magnifications = self.microscope.get_mag_list()
         self.detectors = self.microscope.get_detectors()
         
         # Generally this should be set by the microscope
         # however there can be inaccuracy in the beam current read out or temscript call
-        self._beam_current = self.microscope.get_beam_current()
-        
-        
-        
-        
-        self.acquisition.isscan = True
-        self.stage = StageController(self.microscope)
+        self._beam_current = self.microscope.beam_current()
 
     @property
     def state(self):
@@ -82,8 +71,9 @@ class Controller():
                 if self._state != MicroscopeState.Connected:
                     logger.error(f'Cannot enter {state} state without first connecting to microscope. Either the Micrsocope is not connected or their is a currently active experiment running')
                 else:
+                    
                     self._state = state
-
+                    
     def connect(self, detectors=[], 
                 scan_window=1024, 
                 scan_dwell=1*10**-6, 
@@ -103,14 +93,6 @@ class Controller():
         self._scan_window.show()
         
 
-    def starttomo(self, tiltscheme, detectors, magnifications):
-        self.state = MicroscopeState.Tomography
-        self.tiltscheme = tiltscheme
-        
-        self.stage.move(tiltscheme.get_angle())
-          
-    def getimages():
-        pass
 
 
 
