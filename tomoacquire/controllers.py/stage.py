@@ -1,5 +1,4 @@
 import time
-
 from tomoacquire.controllers.acquisition import AcquireController
 
 class StageController(AcquireController):

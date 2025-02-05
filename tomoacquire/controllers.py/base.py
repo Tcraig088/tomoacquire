@@ -13,10 +13,7 @@ class MicroscopeState(enum.Enum):
     Disconnected = 1
     Callibration = 2
     Tomography = 3
-
-
-
-
+    
 
 class Controller(AcquisitionController, StageController):
     def __init__(self, file):
@@ -71,7 +68,7 @@ class Controller(AcquisitionController, StageController):
                 if self._state != MicroscopeState.Connected:
                     logger.error(f'Cannot enter {state} state without first connecting to microscope. Either the Micrsocope is not connected or their is a currently active experiment running')
                 else:
-                    
+                       
                     self._state = state
                     
     def connect(self, detectors=[], 
