@@ -17,12 +17,20 @@ class ExperimentController():
         self._particle_index = 0
         self._magnifications = []
         self.times = {} 
+
     def start(self, istomo, tiltscheme):
         if istomo:
             self.experiment_type = ExperimentType.Tomography
         else:
             self.experiment_type = ExperimentType.Calibration
         self.tiltscheme = tiltscheme
+
+
+    def stop(self):
+        self.experiment_type = ExperimentType.NoExperiment
+        self.reset_positions()
+        self.times = {}
+
         
              
     @property
@@ -44,14 +52,6 @@ class ExperimentController():
         else:
             self._experiment_type = experiment_type
             
-        match experiment_type:
-            case ExperimentType.NoExperiment:
-                self.end_experiment()
-            case ExperimentType.Tomography:
-                self.start_tomography()
-            case ExperimentType.Calibration:
-                self.start_calibration()
-    
     def add_position(self):
         df_row = pd.DataFrame({
             'particle': self.particle_index,
@@ -66,10 +66,5 @@ class ExperimentController():
         self.positions = pd.DataFrame(columns=['particle', 'x', 'y', 'defocus'])
         self._particle_index = 0
         
-    def start_tomography(self):
-        self._timer_start = time.perf_counter() 
-        
-        while self._experiment_type == ExperimentType.Tomography:
-            if self.
-            
+
         
