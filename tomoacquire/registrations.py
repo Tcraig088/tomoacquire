@@ -74,7 +74,13 @@ class MicroscopeItemDict():
             self._dict[key] = MicroscopeTypeItem(self._items, value)
             self._items += 1
 
-
+    def __getattr__(self, key):
+        try:
+            return self._dict[key]
+        except KeyError:
+            raise AttributeError(f"'DataItemDict' object has no attribute '{key}'")
+    
+    
     def __getitem__(self, key):
         return self._dict[key]
     
@@ -158,16 +164,5 @@ class MicroscopeItemDict():
         """
         return self._dict.keys()
     
-    def names(self):
-        """
-        Returns a list of the keys in the dictionary.
-        
-        Returns:
-            list: a list of the keys in the dictionary
-        """
-        _list = []
-        for key in self._dict.keys():
-            self._dict[key].controller.tomoacquire_name
-  
 TOMOACQUIRE_MICROSCOPES = MicroscopeItemDict()  
 TOMOACQUIRE_MICROSCOPES.update() 

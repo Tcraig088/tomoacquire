@@ -8,28 +8,17 @@ from ipywidgets import widgets
 
 @tomoacquire_hook(name="FEI")
 class FEIMicroscope():
-    def __init__(self, address, port, magnifications):
-        self._mag_list = np.array(magnifications)
-        self.magnifications_total = len(self._mag_list)
-        self.detectors = ['HAADF', 'DF2', 'DF4', 'BF']
+    def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
+        self.detector_options = detectors
+        self.magnification_options = magnifications
+        self.detector_pixelsize = detector_pixelsize
         
-        self._scan_dwell = 0.1
-        self._scan_frame = 1
-        self._scan_exptime = 0.1
-
-        self._acquire_dwell = 0.1
-        self._acquire_frame = 1
-        self._acquire_exptime = 0.1
-
-        self._isscan = False
-        self._scan_window = None
-        self.acq_window = None
-
         if address == 'localhost':
-            self.microscope = temscript.Microscope()
+            if port == 0:
+                self.microscope = temscript.NullMicroscope()
+            else:
+                self.microscope = temscript.Microscope()
         else:
-            print(address, port)
-            print(type(address), type(port))
             self.microscope = temscript.RemoteMicroscope((address, str(port)))
 
     @property
@@ -63,9 +52,8 @@ class FEIMicroscope():
         self.microscope.set_stem_magnification(mag) 
     
     def get_magnification_index(self):
-        #find index in maglist closests to actual magnification
         magnification = self.magnification
-        index = np.argmin(np.abs(self._mag_list - magnification))
+        index = np.argmin(np.abs(self.magnification_options - magnification))
         return index
 
     def get_detectors(self):
