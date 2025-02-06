@@ -1,25 +1,41 @@
 from tomoacquire.hooks import tomoacquire_hook
+from tomobase.data import Sinogram, Image
 import temscript
 import numpy as np 
 import stackview
 from IPython.display import display
 from ipywidgets import widgets
-
+from threading import Thread
+import time
 
 @tomoacquire_hook(name="FEI")
 class FEIMicroscope():
     def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
+        self._isready = False
+        self._isscan = False
+        self.isnull = False
+
         self.detector_options = detectors
-        self.magnification_options = magnifications
+        self.magnification_options = np.array(magnifications)
         self.detector_pixelsize = detector_pixelsize
         
         if address == 'localhost':
             if port == 0:
                 self.microscope = temscript.NullMicroscope()
+                self.isnull = True
             else:
                 self.microscope = temscript.Microscope()
         else:
             self.microscope = temscript.RemoteMicroscope((address, str(port)))
+
+    @property
+    def isready(self):
+        return self._isready
+    
+    
+    @isready.setter
+    def isready(self, value):
+        self._isready = value
 
     @property
     def isscan(self):
@@ -30,15 +46,18 @@ class FEIMicroscope():
         self._isscan = value
         if self.isscan:
             self.sleep = self._scan_exptime
+            self.detectors = self._scan_detectors
             _dict = {"image_size": "FULL",
-                     "binning": 2048/self._scan_frame,
                      "dwell_time(s)": self._scan_dwell	}
+            if not self.isnull:
+                _dict["binning"] = 2048/self._scan_frame
         else:
             self._sleep = self._acquire_exptime
+            self.detectors = self._acquire_detectors
             _dict = {"image_size": "FULL",
-                     "binning": 2048/self._acquire_frame,
                      "dwell_time(s)": self._acquire_dwell	}
-        print('image_timings',_dict)
+            if not self.isnull:
+                _dict["binning"] = 2048/self._acquire_frame
         self.microscope.set_stem_acquisition_param(_dict)
 
     @property
@@ -48,7 +67,7 @@ class FEIMicroscope():
     @magnification.setter
     def magnification(self, mag):
         if type(mag) == int:
-            mag = self._mag_list[mag]
+            mag = self.magnification_options[mag]
         self.microscope.set_stem_magnification(mag) 
     
     def get_magnification_index(self):
@@ -56,47 +75,64 @@ class FEIMicroscope():
         index = np.argmin(np.abs(self.magnification_options - magnification))
         return index
 
-    def get_detectors(self):
-        return self.detectors
-    
-    def imaging_settings(self, detectors, scan_dwell, scan_frame, scan_exptime, acquire_dwell, acquire_frame, acquire_exptime):
-        print('set imaging mode')
-        self.detectors_active = detectors
-        self._scan_dwell = scan_dwell
-        self._scan_frame = scan_frame
-        self._scan_exptime = scan_exptime
-        self._acquire_dwell = acquire_dwell
-        self._acquire_frame = acquire_frame
-        self._acquire_exptime = acquire_exptime
+    def _set_imaging_settings(self, **kwargs):
 
-        self._scan_window = np.zeros((len(self.detectors_active),self._scan_frame, self._scan_frame))
-        self._acq_window = np.zeros((len(self.detectors_active),self._acquire_frame, self._acquire_frame))
-        print(self._scan_window.shape, self._acq_window.shape)  
-        self.show_scan()
+        for key, value in kwargs.items():
+            match key:
+                case 'scan_detectors':
+                    self._scan_detectors = value
+                case 'scan_dwell':
+                    self._scan_dwell = value
+                case 'scan_frame':
+                    self._scan_frame = value
+                case 'scan_exptime':
+                    self._scan_exptime = value
+                case 'dwell_detectors':
+                    self._acquire_detectors = value
+                case 'acquire_dwell':
+                    self._acquire_dwell = value
+                case 'acquire_frame':
+                    self._acquire_frame = value
+                case 'acquire_exptime':
+                    self._acquire_exptime = value
+                case 'magnification':
+                    self.magnification = value
+                case 'isblanked':
+                    self.isblanked = value
 
-    
+        acq_data = np.zeros((self._acquire_frame, self._acquire_frame, len(self._scan_detectors)))
+        scan_data = np.zeros((self._scan_frame, self._scan_frame, len(self._acquire_detectors)))
+
+        self.image = Image(scan_data)
+        self.sinogram = Sinogram(acq_data, np.array([0]*len(self._acquire_detectors)))
+
+        if not self.isready:
+            self.isscan = True
+            while not self.isscan:
+                pass
+            self.isready = True
+            acquire_thread = Thread(target=self.acquire)
+            acquire_thread.daemon = True
+            acquire_thread.start()
+
     def acquire(self):
-        print('start acquisition')
-        print(self._scan_dwell)
-        while True:
-            print('_dict')
-            _dict = self.microscope.acquire(*self.detectors_active)
-            print(_dict)
+        while self.isready:
+            _dict = self.microscope.acquire(*self.detectors)
+            for i, item in enumerate(self.detectors):
+                _dict[item] = np.random.random(self.image.data.shape)[i,:,:].squeeze()
+            time.sleep(self.sleep)
             if self.isscan:
-                #for each entry in the dict enumerated
-                for i, (key, value) in enumerate(_dict.items()):
-                    if key in self.detectors:
-                        self._scan_window[i,:,:] = value
+                if len(self.detectors) == 1:
+                    self.image.data[0,:,:] = _dict[self.detectors[0]]
+                    self.image.view.update()
+                else:
+                    for i, (key, value) in enumerate(_dict.items()):
+                        self.image[i,:,:] = value
             else:
                 for i, (key, value) in enumerate(_dict.items()):
                     if key in self.detectors:
-                        self._acq_window[i,:,:] = value
+                        self.sinogram[i,:,:] = value
 
-   
-    def show_scan(self):
-        self.scan = stackview.slice(self._scan_window, continuous_update=True)
-        self.acq = stackview.slice(self._acq_window, continuous_update=True)
-        display(widgets.HBox([self.scan, self.acq]))
                 
             
 
