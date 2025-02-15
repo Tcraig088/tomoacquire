@@ -1,1 +1,1 @@
-from tomoacquire.controllers.base import Controller
+from tomoacquire.controllers.main import Controller

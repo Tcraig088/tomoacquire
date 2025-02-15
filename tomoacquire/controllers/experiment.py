@@ -1,70 +1,110 @@
-
-import enum
 import time
-import pandas as pd
+import enum
+from ipywidgets import widgets
+from IPython.display import display
+from threading import Thread
 from tomobase.log import logger
+from tomoacquire.scanwindow import ScanWindow
+from tomoacquire import config as mc
+from threading import Thread
+import numpy as np
+import stackview
+from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
+from tomoacquire.states import MicroscopeState, ImagingState
 
-class ExperimentType(enum.Enum):
-    NoExperiment = 0
-    Tomography = 1
-    Calibration = 2
+from tomoacquire.controllers.base import BaseController
 
-class ExperimentController():
-    def __init__(self, microscope, callibration_method=None):
-        self._experiment_type = ExperimentType.NoExperiment
-        self.callibration_method = None
-        self.positions = pd.DataFrame(columns=['particle', 'x', 'y', 'defocus'])
-        self._particle_index = 0
-        self._magnifications = []
-        self.times = {} 
+class ExperimentController(BaseController):
+    def __init__(self):
+        super().__init__()
 
-    def start(self, istomo, tiltscheme):
-        if istomo:
-            self.experiment_type = ExperimentType.Tomography
-        else:
-            self.experiment_type = ExperimentType.Calibration
-        self.tiltscheme = tiltscheme
+    def _show_window_settings(self):
+        magnification_select = widgets.IntSlider(value = int(self.microscope.get_magnification_index()),
+                                min=0,
+                                max=len(self.microscope.magnification_options)-1,
+                                description='Magnification:')
+        isblanked_select = widgets.Checkbox(value=self.microscope.isblank, description='Blank Beam')
+        self.control_group = widgets.HBox([magnification_select, isblanked_select])
 
 
-    def stop(self):
-        self.experiment_type = ExperimentType.NoExperiment
-        self.reset_positions()
-        self.times = {}
+        magnification_select.observe(self._on_magnification_change, names='value')
+        isblanked_select.observe(self._on_blank_change, names='value')
 
+    def _show_experiment_settings(self):
+        tiltscheme = widgets.Dropdown(options = TOMOBASE_TILTSCHEMES.keys(), description='Tilt Scheme:')
+        tiltscheme_select = widgets.Button(description='Select')
+        self.tiltscheme_group = widgets.HBox([tiltscheme, tiltscheme_select])
+
+        experiment = widgets.Dropdown(options = ['Tomography', 'Callibration'], description='Experiment:')
+        magnification_select = widgets.SelectMultiple(options = self.microscope.magnification_options, description='Magnifications:')
+        self.experiment_type_group = widgets.HBox([experiment, self.tiltscheme_group, magnification_select])
+
+        correctbacklash = widgets.Checkbox(value=True, description='Correct Backlash')
+        interem_tilts = widgets.FloatText(value=90.0, description='Intermediate Tilt:')
+        correct_intermediates = widgets.Checkbox(value=False, description='Correct Intermediate Tilt')  
+        interem_pause = widgets.FloatText(value=0.0, description='Intermediate Pause:')
+        self.options_group = widgets.VBox([correctbacklash, interem_tilts, correct_intermediates, interem_pause])
+
+        tiltscheme_select.on_click(self._on_tiltscheme)
         
-             
-    @property
-    def particle_index(self):
-        return self._particle_index
+    def show(self):
+        self.microscope.image.show()
+        self._show_window_settings()
+        self._show_experiment_settings()
+        confirm_button = widgets.Button(description='Confirm Experiment')
+        confirm_button.on_click(self._on_confirm_experiment)
+
+        self.experiment_group = widgets.VBox([self.control_group, self.experiment_type_group, self.options_group, confirm_button])
+  
+    def _on_confirm_experiment(self, b):
+        tiltscheme = TOMOBASE_TILTSCHEMES[self.tiltscheme_group.children[0].value].parsewidget(self.tiltwidget)
+        _dict = {
+            'tiltscheme': tiltscheme,
+            'magnifications': self.experiment_type_group.children[2].value,
+            'experiment': self.experiment_type_group.children[0].value,
+            'correctbacklash': self.options_group.children[0].value,
+            'intermediate_tilt': self.options_group.children[1].value,
+            'correct_intermediates': self.options_group.children[2].value,
+            'intermediate_pause': self.options_group.children[3].value
+        }
+        self.microscope.start_experiment(**_dict) 
+        self.experiment_group.close()
+        
+    def start_experiment(self, **kwargs):
+        pass
+
+    def _on_tiltscheme(self, b):
+        if self.istiltselected:
+            self.tiltwidget.close()
+        self.istiltselected = True
+        self.tiltwidget = TOMOBASE_TILTSCHEMES[self.tiltscheme_group.children[0].value].controller.TiltSchemeWidget()
+        display(self.tiltwidget)
+
+    def _on_magnification(self, b):
+        if self.state == MicroscopeState.Ready:
+            self.threadedrequest(self.set_magnification, self.control_group.children[0].value)
+
+    def set_magnification(self, magnification):
+            self.microscope.magnification = magnification
+
+    def _on_blank(self, b):
+        print(self.state)
+        if self.state == MicroscopeState.Ready:
+            self.threadedrequest(self.set_blank, self.control_group.children[1].value)
     
-    @particle_index.setter
-    def particle_index(self, particle_index):
-        self._particle_index = particle_index
-        
-    @property
-    def experiment_type(self):
-        return self._experiment_type
-    
-    @experiment_type.setter
-    def experiment_type(self, experiment_type):
-        if self._experiment_type == experiment_type:
-            logger.warning(f'Already in state {experiment_type}. Cannot Change Experimental State.')
-        else:
-            self._experiment_type = experiment_type
-            
-    def add_position(self):
-        df_row = pd.DataFrame({
-            'particle': self.particle_index,
-            'x': self.microscope.position[0],
-            'y': self.microscope.position[1],
-            'defocus': self.microscope.defocus
-        })
-        
-        self.positions = pd.concat([self.positions, df_row])    
-    
-    def reset_positions(self):
-        self.positions = pd.DataFrame(columns=['particle', 'x', 'y', 'defocus'])
-        self._particle_index = 0
-        
+    def set_blank(self, isblanked):
+        self.microscope.isblank = isblanked
 
-        
+
+
+
+
+
+
+
+
+
+
+    
+
+
