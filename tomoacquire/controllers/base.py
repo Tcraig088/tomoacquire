@@ -10,12 +10,7 @@ from threading import Thread
 import numpy as np
 import stackview
 from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
-class MicroscopeState(enum.Enum):
-    Connected = 0
-    Disconnected = 1
-    Callibration = 2
-    Tomography = 3
-    Ready = 4
+from tomoacquire.states import MicroscopeState, ImagingState
 
 class Controller():
     def __init__(self):
@@ -81,7 +76,7 @@ class Controller():
                                     max=len(self.microscope.magnification_options)-1, 
                                     description='Magnification:')
             
-            isblanked_select = widgets.Checkbox(value=False, description='Blank Beam')
+            isblanked_select = widgets.Checkbox(value=self.microscope.isblank, description='Blank Beam')
 
             isblanked_select.observe(self._on_blank, names='value')
             magnification_select.observe(self._on_magnification, names='value')
@@ -95,8 +90,6 @@ class Controller():
             self.imaging_group = widgets.VBox([self.detect_group, self.scan_group, self.acquire_group, self.control_group, imaging_button])
             display(self.imaging_group)
             self.isscanwidget = True
-
-    
 
     def show(self):
         match self.state:
@@ -124,6 +117,15 @@ class Controller():
                 display(self.experiment_group)
                 tiltscheme_select.on_click(self._on_tiltscheme)
 
+                useprediction = widgets.Checkbox(value=False, description='Use Prediction')
+                correctbacklash = widgets.Checkbox(value=True, description='Correct Backlash')
+                automate = widgets.Checkbox(value=False, description='Automate')
+                interem_tilts = widgets.FloatText(value=90.0, description='Intermediate Tilt:')
+                correct_intermediates = widgets.Checkbox(value=False, description='Correct Intermediate Tilt')  
+
+                
+
+
     def _on_tiltscheme(self, b):
         if self.istiltselected:
             self.tiltwidget.close()
@@ -132,21 +134,20 @@ class Controller():
         display(self.tiltwidget)
 
 
-           
-
-
-
-
-
-
-
     def _on_magnification(self, b):
         if self.state == MicroscopeState.Ready:
-            self.microscope.magnification = self.microscope.magnification_options[self.control_group.children[0].value]
+            self.threadedrequest(self.set_magnification, self.control_group.children[0].value)
+
+    def set_magnification(self, magnification):
+            self.microscope.magnification = magnification
 
     def _on_blank(self, b):
+        print(self.state)
         if self.state == MicroscopeState.Ready:
-            self.microscope.isblank = self.control_group.children[1].value
+            self.threadedrequest(self.set_blank, self.control_group.children[1].value)
+    
+    def set_blank(self, isblanked):
+        self.microscope.isblank = isblanked
 
     def _on_ready(self, b):
         if self.state == MicroscopeState.Connected:
@@ -202,6 +203,40 @@ class Controller():
     def connect(self, microscope_name):
         self.microscope = mc.get_microscope(microscope_name)
         self.state = MicroscopeState.Connected
+
+    def threadedrequest(self, func, *args, **kwaargs):
+        args = (func, *args)
+        thread = Thread(target=self.processrequest, args=args, kwargs=kwaargs)
+        thread.daemon = True
+        thread.start()
+
+    def processrequest(self, func, *args, **kwaargs):
+        if self.microscope.state == ImagingState.Idle:
+            self.microscope.state = ImagingState.Requested
+        else:
+            self.microscope.state = ImagingState.Queued
+
+        while self.microscope.state != ImagingState.Queued:
+            if self.state != ImagingState.Requested | self.state != ImagingState.Queued:
+                self.state = ImagingState.Requested
+            time.sleep(0.1)
+        print('executing')
+
+        isexecute = True
+        while isexecute:    
+            try:
+                self.microscope.state = ImagingState.Executing
+                blanked = self.microscope.isblank
+                self.microscope.isblank = True
+                func(*args, **kwaargs)
+                self.microscope.isblank = self.control_group.children[1].value
+                isexecute = False
+                self.microscope.state = ImagingState.Idle
+            except Exception as e:
+                print('áttempt failed')
+                time.sleep(0.1)
+
+
 
 
 

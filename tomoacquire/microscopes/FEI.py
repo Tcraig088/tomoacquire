@@ -7,13 +7,18 @@ from IPython.display import display
 from ipywidgets import widgets
 from threading import Thread
 import time
+import enum
+from tomoacquire.states import ImagingState
 
 @tomoacquire_hook(name="FEI")
 class FEIMicroscope():
     def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
         self._isready = False
         self._isscan = False
-        self.isnull = False
+        self._isnull = False
+        self._isblank = False
+        self.state = ImagingState.Idle   
+
 
         self.detector_options = detectors
         self.magnification_options = np.array(magnifications)
@@ -22,11 +27,27 @@ class FEIMicroscope():
         if address == 'localhost':
             if port == 0:
                 self.microscope = temscript.NullMicroscope()
-                self.isnull = True
+                self._isnull = True
             else:
                 self.microscope = temscript.Microscope()
         else:
             self.microscope = temscript.RemoteMicroscope((address, str(port)))
+    
+
+    @property
+    def isblank(self):
+        print('reading isblank')	
+        return self.microscope.get_beam_blanked()
+    
+    @isblank.setter
+    def isblank(self, value):
+        self._isblank = value
+        print('setting isblank')
+        self.microscope.set_beam_blanked(value)
+
+    @property
+    def isnull(self):
+        return self._isnull 
 
     @property
     def isready(self):
@@ -76,7 +97,6 @@ class FEIMicroscope():
         return index
 
     def _set_imaging_settings(self, **kwargs):
-
         for key, value in kwargs.items():
             match key:
                 case 'scan_detectors':
@@ -100,11 +120,10 @@ class FEIMicroscope():
                 case 'isblanked':
                     self.isblanked = value
 
-        acq_data = np.zeros((self._acquire_frame, self._acquire_frame, len(self._scan_detectors)))
+        #acq_data = np.zeros((self._acquire_frame, self._acquire_frame, len(self._scan_detectors)))
         scan_data = np.zeros((self._scan_frame, self._scan_frame, len(self._acquire_detectors)))
-
         self.image = Image(scan_data)
-        self.sinogram = Sinogram(acq_data, np.array([0]*len(self._acquire_detectors)))
+        #self.sinogram = Sinogram(acq_data, np.array([0]*len(self._acquire_detectors)))
 
         if not self.isready:
             self.isscan = True
@@ -117,21 +136,37 @@ class FEIMicroscope():
 
     def acquire(self):
         while self.isready:
-            _dict = self.microscope.acquire(*self.detectors)
-            for i, item in enumerate(self.detectors):
-                _dict[item] = np.random.random(self.image.data.shape)[i,:,:].squeeze()
-            time.sleep(self.sleep)
-            if self.isscan:
-                if len(self.detectors) == 1:
-                    self.image.data[0,:,:] = _dict[self.detectors[0]]
-                    self.image.view.update()
+            print(self.state)
+            if self.state == ImagingState.Idle:
+                self.state = ImagingState.Blocked
+                _dict = self.microscope.acquire(*self.detectors)
+                if self.isnull:
+                    for i, item in enumerate(self.detectors):
+                        _dict[item] = np.random.random(self.image.data.shape)[i,:,:].squeeze()
+                time.sleep(self.sleep)
+                if self.isscan:
+                    print("Updating image")
+                    if len(self.detectors) == 1:
+                        self.image.data[0,:,:] = _dict[self.detectors[0]]
+                        self.image.view.update()
+                    else:
+                        for i, (key, value) in enumerate(_dict.items()):
+                            self.image[i,:,:] = value
                 else:
                     for i, (key, value) in enumerate(_dict.items()):
-                        self.image[i,:,:] = value
+                        if key in self.detectors:
+                            self.sinogram[i,:,:] = value
+                
+                if self.state == ImagingState.Blocked:
+                    self.state = ImagingState.Idle
+                elif self.state == ImagingState.Requested:
+                    self.state = ImagingState.Queued
             else:
-                for i, (key, value) in enumerate(_dict.items()):
-                    if key in self.detectors:
-                        self.sinogram[i,:,:] = value
+                time.sleep(0.1)
+
+
+
+
 
                 
             
