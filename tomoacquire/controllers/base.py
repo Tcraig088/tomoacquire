@@ -97,7 +97,7 @@ class Controller():
 
     def _on_imaging(self, b):
         detectors = self.imaging_group.children[0].value
-        print(detectors)
+  
         scan_dwell = self.scan_group.children[0].value *10**-6
         scan_frame = self.scan_group.children[1].value
         scan_exptime = self.scan_group.children[2].value
@@ -112,13 +112,14 @@ class Controller():
         if acquire_exptime == 0.0:
             acquire_exptime = acquire_frame * acquire_dwell * acquire_frame
 
-        print(self.state)
         if self.state == MicroscopeState.Connected:
             self.microscope.imaging_settings(detectors, scan_dwell, scan_frame, scan_exptime, acquire_dwell, acquire_frame, acquire_exptime) 
             self._state = MicroscopeState.ScanConnected
             self.microscope.isscan = True
             acq_thread = Thread(target=self.acquire)
+            acq_thread.daemon = True
             acq_thread.start()
+            
 
     def acquire(self):
         self.microscope.acquire()

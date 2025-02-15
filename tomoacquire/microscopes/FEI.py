@@ -10,16 +10,23 @@ from ipywidgets import widgets
 class FEIMicroscope():
     def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
         self.detector_options = detectors
-        self.magnification_options = magnifications
+        self.magnification_options = np.array(magnifications)
         self.detector_pixelsize = detector_pixelsize
         
+        self._isnull = False
         if address == 'localhost':
             if port == 0:
                 self.microscope = temscript.NullMicroscope()
+                self._isnull = True
             else:
                 self.microscope = temscript.Microscope()
         else:
             self.microscope = temscript.RemoteMicroscope((address, str(port)))
+
+    @property
+    def isnull(self):
+        return self._isnull
+    
 
     @property
     def isscan(self):
@@ -38,7 +45,8 @@ class FEIMicroscope():
             _dict = {"image_size": "FULL",
                      "binning": 2048/self._acquire_frame,
                      "dwell_time(s)": self._acquire_dwell	}
-        print('image_timings',_dict)
+        if self.isnull:
+            _dict.pop("binning", None)
         self.microscope.set_stem_acquisition_param(_dict)
 
     @property
@@ -60,7 +68,7 @@ class FEIMicroscope():
         return self.detectors
     
     def imaging_settings(self, detectors, scan_dwell, scan_frame, scan_exptime, acquire_dwell, acquire_frame, acquire_exptime):
-        print('set imaging mode')
+
         self.detectors_active = detectors
         self._scan_dwell = scan_dwell
         self._scan_frame = scan_frame
