@@ -13,6 +13,66 @@ from tomoacquire.states import ImagingState
 @tomoacquire_hook(name="FEI")
 class FEIMicroscope():
     def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
+        self.detector_options = detectors
+        self.magnification_options = np.array(magnifications)
+        self.detector_pixelsize = detector_pixelsize
+        
+        self._isnull = False
+        if address == 'localhost':
+            if port == 0:
+                self.microscope = temscript.NullMicroscope()
+                self._isnull = True
+            else:
+                self.microscope = temscript.Microscope()
+        else:
+            self.microscope = temscript.RemoteMicroscope((address, str(port)))
+
+
+    def _set_imaging_settings(self, **kwargs):
+        for key, value in kwargs.items():
+            match key:
+                case 'scan_detectors':
+                    self._scan_detectors = value
+                case 'scan_dwell':
+                    self._scan_dwell = value
+                case 'scan_frame':
+                    self._scan_frame = value
+                case 'scan_exptime':
+                    self._scan_exptime = value
+                case 'dwell_detectors':
+                    self._acquire_detectors = value
+                case 'acquire_dwell':
+                    self._acquire_dwell = value
+                case 'acquire_frame':
+                    self._acquire_frame = value
+                case 'acquire_exptime':
+                    self._acquire_exptime = value
+
+    def start_imaging(self):
+        new_thread = Thread(target=self.acquire)
+        new_thread.daemon = True
+        new_thread.start()
+        self.imaging_thread_open = True
+
+    def stop_imaging(self):
+        self.is_imaging = False
+        self.imaging_thread_open
+                     
+    def acquire(self):
+        while self.is_imaging:
+            _dict = self.microscope.acquire(*self.detectors)
+            if self._isnull:
+                for i, item in enumerate(self.detectors):
+                    _dict[item] = np.random.random([512, 512])
+
+        
+
+
+
+
+@tomoacquire_hook(name="FEIP")
+class FEIMicroscope():
+    def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
         self._isready = False
         self._isscan = False
         self._isnull = False

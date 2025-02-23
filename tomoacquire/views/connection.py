@@ -20,13 +20,13 @@ class ConnectView():
     def show(self):
         microscopes_dropdown = widgets.Dropdown(options = mc.get_names())
         connect_button = widgets.Button(description='Connect')
-        self.connect_group = widgets.HBox([microscopes_dropdown, connect_button])
+        self.group = widgets.HBox([microscopes_dropdown, connect_button])
         connect_button.on_click(self._on_connect)
-        display(self.connect_group)
+        display(self.group)
 
     def _on_connect(self, b):
-        microscope_name = self.connect_group.children[0].value
+        microscope_name = self.group.children[0].value
         self.controller.connect(microscope_name)
-        self.connect_group.close()
+        self.group.close()
 
 

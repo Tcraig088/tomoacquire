@@ -23,10 +23,20 @@ class ControllerTest():
     def update_imaging_settings(self, **kwargs):
         self.microscope._set_imaging_settings(**kwargs)
 
+    def magnify(self, magnification):
+        self.microscope.stop_imaging()
+        self.microscope.set_magnification(magnification)
+        self.microscope.start_imaging()
+
+    def blank(self, isblank):
+        self.microscope.stop_imaging()
+        self.microscope.isblank = isblank
+        self.microscope.start_imaging()
+
     
 
 
-class BaseController():
+class Controller():
     def __init__(self):
         self._state = MicroscopeState.Disconnected
         self.microscope = None
