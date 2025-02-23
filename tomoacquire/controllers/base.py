@@ -21,7 +21,12 @@ class ControllerTest():
         self.state = MicroscopeState.Connected
 
     def update_imaging_settings(self, **kwargs):
-        self.microscope._set_imaging_settings(**kwargs)
+        if self.state == MicroscopeState.Connected:
+            self.microscope._set_imaging_settings(**kwargs)
+        elif self.state == MicroscopeState.Ready:
+            self.microscope.stop_imaging()
+            self.microscope._set_imaging_settings(**kwargs)
+            self.microscope.start_imaging()
 
     def magnify(self, magnification):
         self.microscope.stop_imaging()
