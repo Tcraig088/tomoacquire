@@ -24,6 +24,7 @@ class FEIMicroscope():
         self.magnification_options = np.array(magnifications)
         self.detector_pixelsize = detector_pixelsize
         
+        self._isnull = False
         if address == 'localhost':
             if port == 0:
                 self.microscope = temscript.NullMicroscope()
