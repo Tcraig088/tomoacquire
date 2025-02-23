@@ -12,6 +12,20 @@ import stackview
 from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
 from tomoacquire.states import MicroscopeState, ImagingState
 
+class ControllerTest():
+    def __init__(self):
+        self._state = MicroscopeState.Disconnected
+
+    def connect(self, microscope_name):
+        self.microscope = mc.get_microscope(microscope_name)
+        self.state = MicroscopeState.Connected
+
+    def update_imaging_settings(self, **kwargs):
+        self.microscope._set_imaging_settings(**kwargs)
+
+    
+
+
 class Controller():
     def __init__(self):
         self._state = MicroscopeState.Disconnected
