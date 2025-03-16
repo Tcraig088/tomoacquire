@@ -1,11 +1,11 @@
 import enum
 
 class MicroscopeState(enum.Enum):
-    Connected = 0
-    Disconnected = 1
-    Callibration = 2
-    Tomography = 3
-    Ready = 4
+    CONNECTED = 0
+    DISCONNECTED = 1
+    CALLIBRATION = 2
+    TOMOGRAPHY = 3
+    READY = 4
 
 class ImagingState(enum.Enum):
     Idle = 0

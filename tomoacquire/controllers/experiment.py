@@ -27,7 +27,7 @@ class ExperimentController(BaseController):
         self.control_group = widgets.HBox([magnification_select, isblanked_select])
 
 
-        magnification_select.observe(self._on_magnification_change, names='value')
+        magnification_select.observe(s  elf._on_magnification_change, names='value')
         isblanked_select.observe(self._on_blank_change, names='value')
 
     def _show_experiment_settings(self):

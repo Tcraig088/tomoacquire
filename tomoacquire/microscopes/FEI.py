@@ -10,7 +10,7 @@ import time
 import enum
 from tomoacquire.states import ImagingState
 
-@tomoacquire_hook(name="FEI")
+@tomoacquire_hook(name="FEIP")
 class FEIMicroscope():
     def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
         self.detector_options = detectors
@@ -70,7 +70,7 @@ class FEIMicroscope():
 
 
 
-@tomoacquire_hook(name="FEIP")
+@tomoacquire_hook(name="FEI")
 class FEIMicroscope():
     def __init__(self, address, port, magnifications, detectors, detector_pixelsize):
         self._isready = False

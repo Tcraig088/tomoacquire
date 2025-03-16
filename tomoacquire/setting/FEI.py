@@ -44,10 +44,6 @@ class Controller():
         # Generally this should be set by the microscope
         # however there can be inaccuracy in the beam current read out or temscript call
         self._beam_current = self.microscope.get_beam_current()
-        
-        
-        
-        
         self.acquisition.isscan = True
         self.stage = StageController(self.microscope)
 
