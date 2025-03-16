@@ -5,7 +5,7 @@ class MicroscopeState(enum.Enum):
     DISCONNECTED = 1
     CALLIBRATION = 2
     TOMOGRAPHY = 3
-    READY = 4
+    DETECTORSINIT= 4
 
 class ImagingState(enum.Enum):
     Idle = 0
