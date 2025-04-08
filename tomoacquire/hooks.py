@@ -7,7 +7,7 @@ def tomoacquire_hook(name: str):
         name (str): the name of the tilt scheme. Should be readable casing and spaces. 
     """
     def decorator(cls):
-        cls.tomoacquire_name = name
+        cls.tomobase_name = name
         cls.is_tomoacquire_microscope = True
         return cls
     return decorator

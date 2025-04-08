@@ -26,10 +26,12 @@ class FEIMicroscope(QObject):
         self._isscan = False
         self._isnull = False
         self._isblank = False
+        
         self.state = ImagingState.Idle   
 
         self.detector_options = detectors
         self.magnification_options = np.array(magnifications)
+        
         self.detector_pixelsize = detector_pixelsize
 
         self._isnull = False
@@ -44,8 +46,25 @@ class FEIMicroscope(QObject):
                 self.microscope = temscript.Microscope()
         else:
             self.microscope = temscript.RemoteMicroscope((self.address, str(self.port)))
+        self._magnification = self.microscope.get_stem_magnification()
+
+    @property
+    def magnification(self):
+        #self.queue_thread(self.microscope.get_stem_magnification)
+        return self._magnification
+    
+    @magnification.setter
+    def magnification(self, value):
+        if isinstance(value, int):
+            value = self.magnification_options[value]
+        logger.info("Setting magnification to %s", value)
+        self.queue_thread(self.microscope.set_stem_magnification, value)
 
 
+    def setmagnification(self, mag):
+        if isinstance(mag, int):
+            mag = self.magnification_options[mag]
+            self.microscope.set_stem_magnification(mag)
     @property
     def isblank(self):
         return self._isblank

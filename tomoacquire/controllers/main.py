@@ -12,7 +12,7 @@ import stackview
 from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
 from tomoacquire.states import MicroscopeState, ImagingState
 
-class Controller(Connection ):
+class Controller(Connection):
     def __init__(self):
         self._state = MicroscopeState.Disconnected
         self.isscanwidget = False
