@@ -71,5 +71,5 @@ def get_microscope(name):
     detectors = microscope['detectors']
     detector_pixelsize = microscope['detector_pixelsize']
 
-    mclass = TOMOACQUIRE_MICROSCOPES[classification].controller
+    mclass = TOMOACQUIRE_MICROSCOPES[classification].value
     return mclass(address, port, magnifications, detectors, detector_pixelsize)

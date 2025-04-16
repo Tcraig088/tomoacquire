@@ -1,15 +1,15 @@
-
 import zmq
 from tomobase.log import logger
 from tomoacquire.hooks import tomoacquire_hook
 
 
 class Stage:
-    def __init__(self):
+    def __init__(self,x:float=0.0, y:float=0.0, z:float=0.0, tilt:float=0.0):
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
         self.tilt = 0.0
+        self.defocus = 0.0
 
 class Beam:
     def __init__(self):
@@ -29,7 +29,7 @@ class ScanSettings:
     
 
 @tomoacquire_hook(name="TEMScript")
-class TEMSCriptMicroscope():
+class TEMScriptMicroscope():
     def __init__(self, address:str="192.168.0.1", request:int=50000, subscribe:int=50001):
         self.address = address
         self.request_port = request
@@ -64,8 +64,8 @@ class TEMSCriptMicroscope():
         reply = self.request_socket.recv_json()
         logger.debug(f"Scan settings: {reply}")
 
-    def move_stage(self, x:float=0.0, y:float=0.0, z:float=0.0, tilt:float=0.0):
-        """move the stage to the specified position"""
+    def set_stage_positions(self, x: float = 0.0, y: float = 0.0, z: float = 0.0, tilt: float = 0.0):
+        """Move the stage to the specified position."""
         msg = {'id': 'move_request'}
         msg['x'] = x
         msg['y'] = y
@@ -76,5 +76,14 @@ class TEMSCriptMicroscope():
         reply = self.request_socket.recv_json()
         logger.debug(f"Stage move: {reply}")
 
+    def get_stage_positions(self):
+        """get the current stage position"""
+        msg = {'id': 'postion_request'}
+        self.request_socket.send_json(msg)
+        reply = self.request_socket.recv_json()
+
+        reply.pop('id')
+        logger.debug(f"Stage position: {reply}")
+        return reply
 
 
