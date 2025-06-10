@@ -1,6 +1,12 @@
 import zmq
+import numpy as np
 from tomobase.log import logger
 from tomoacquire.hooks import tomoacquire_hook
+import enum
+class State(enum.Enum):
+    IDLE = 0
+    CONNECTED = 2
+    SCANNING = 4
 
 
 class Stage:
@@ -31,6 +37,7 @@ class ScanSettings:
 @tomoacquire_hook(name="TEMScript")
 class TEMScriptMicroscope():
     def __init__(self, address:str="192.168.0.1", request:int=50000, subscribe:int=50001):
+        self.state = State.IDLE
         self.address = address
         self.request_port = request
         self.subscribe_port = subscribe
@@ -48,6 +55,8 @@ class TEMScriptMicroscope():
         msg = {'id': 'connect_request'}
         self.request_socket.send_json(msg)
         reply = self.request_socket.recv_json()
+        self.detector_options = reply.get('detectors', {})
+        self.state = State.CONNECTED
         return reply
 
     def set_scan(self, isscan:bool=True, dwell_time:float=0.5, frame_size:int=1024, scan_time:float=0.63, detectors:list=[]):
@@ -55,7 +64,7 @@ class TEMScriptMicroscope():
 
         msg = {'id': 'scan_request'}
         msg['isscan'] = isscan
-        msg['dwell_time'] = dwell_time*10**(-6)  # convert to seconds
+        msg['dwell_time'] = dwell_time
         msg['frame_size'] = frame_size
         msg['scan_time'] = scan_time
         msg['detectors'] = detectors
@@ -64,13 +73,32 @@ class TEMScriptMicroscope():
         reply = self.request_socket.recv_json()
         logger.debug(f"Scan settings: {reply}")
 
-    def set_stage_positions(self, x: float = 0.0, y: float = 0.0, z: float = 0.0, tilt: float = 0.0):
+    def start_scan(self, isscan:bool=True, start:bool=True):
+        """Start or stop the scan."""
+        msg = {'id': 'imaging_request'}
+        msg['isscan'] = isscan
+        msg['start'] = start
+
+        self.request_socket.send_json(msg)
+        reply = self.request_socket.recv_json()
+        logger.debug(f"Scan start/stop: {reply}")
+        if reply['success'] and start:
+            self.state = State.SCANNING
+        elif reply['success'] and not start:
+            self.state = State.CONNECTED
+
+    def set_stage_positions(self, x=None, y=None, z=None, tilt=None):
         """Move the stage to the specified position."""
         msg = {'id': 'move_request'}
+
         msg['x'] = x
         msg['y'] = y
         msg['z'] = z
         msg['tilt'] = tilt
+
+        for key, value in msg.items():
+            if value is None:
+                msg.pop(key)
 
         self.request_socket.send_json(msg)
         reply = self.request_socket.recv_json()
