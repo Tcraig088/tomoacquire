@@ -3,6 +3,8 @@ import numpy as np
 from tomobase.log import logger
 from tomoacquire.hooks import tomoacquire_hook
 import enum
+from threading import Thread
+
 class State(enum.Enum):
     IDLE = 0
     CONNECTED = 2
@@ -51,6 +53,9 @@ class TEMScriptMicroscope():
         self.magnification_options = []
         self.detector_options = {}
 
+        receive_thread = Thread(target=self.receive_data, daemon=True)
+        receive_thread.start()
+
     def connect(self):
         msg = {'id': 'connect_request'}
         self.request_socket.send_json(msg)
@@ -86,6 +91,7 @@ class TEMScriptMicroscope():
             self.state = State.SCANNING
         elif reply['success'] and not start:
             self.state = State.CONNECTED
+        return reply
 
     def set_stage_positions(self, x=None, y=None, z=None, tilt=None):
         """Move the stage to the specified position."""
@@ -103,6 +109,19 @@ class TEMScriptMicroscope():
         self.request_socket.send_json(msg)
         reply = self.request_socket.recv_json()
         logger.debug(f"Stage move: {reply}")
+
+    def receive_data(self):
+        poller = zmq.Poller()
+        poller.register(self.subscribe_socket, zmq.POLLIN)
+        # This loop can run in a thread, or you can call receive_data periodically
+        while True:
+            events = dict(poller.poll(timeout=100))  # 100 ms timeout, adjust as needed
+            if self.subscribe_socket in events:
+                msg = self.subscribe_socket.recv_json()
+                logger.debug(f"Received data: {msg['shape']}")
+                logger.debug(f"Received data: {msg['isscan']}")
+                # emit, process, or handle msg here
+      
 
     def get_stage_positions(self):
         """get the current stage position"""
