@@ -1,7 +1,10 @@
 import zmq
+import time
 import numpy as np
+import coolname
 from tomobase.log import logger
-from tomoacquire.hooks import tomoacquire_hook
+from tomoacquire.hooks import protocol_hook
+from tomoacquire.microscopes import save_microscope
 import enum
 from threading import Thread
 
@@ -10,14 +13,82 @@ class State(enum.Enum):
     CONNECTED = 2
     SCANNING = 4
 
+class ZMQManager():
+    def __init__(self, address:str="localhost", request:int=50000, subscribe:int=50001):
+        self.state = State.IDLE
+        self._active_sockets = 0
+        self.context = zmq.Context()
+        self.request_socket = self.context.socket(zmq.REQ, 5000)
+        self.subscribe_socket = self.context.socket(zmq.SUB)
 
-class Stage:
-    def __init__(self,x:float=0.0, y:float=0.0, z:float=0.0, tilt:float=0.0):
+        self.request_address = f"tcp://{address}:{request}"
+        self.subscribe_address= f"tcp://{address}:{subscribe}"
+
+    def connect(self):
+        self.request_socket.connect(self.request_address)
+        self.subscribe_socket.connect(self.subscribe_address)
+        
+        msg = {'id': 'connect_request'}
+        reply = self.req_send(msg)
+        self._active_sockets += 1
+
+        subscribe_thread = Thread(target=self.subscribe, daemon=True)
+        subscribe_thread.start()
+
+        start = time.time()
+        while (time.time() - start < 10) and self._active_sockets < 2:
+            pass
+
+        msg = {'id': 'connect_confirm'}
+        reply = self.req_send(msg)
+        self.State = State.CONNECTED
+
+    def reply_recv(self):
+        """Receive a message from the request socket and provides an error on timeout in case of hanging."""
+        try:
+            msg = self.request_socket.recv_json()
+        except zmq.Again as e:
+            logger.error(f"Failed to receive message: {e}")
+            self.disconnect()
+        return msg
+
+
+
+class Stage(ZMQManager):
+    def __init__(self,address, request, reply):
+        super().__init__()
+
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
         self.tilt = 0.0
         self.defocus = 0.0
+
+    def getstage(self):
+        """get the current stage position"""
+        msg = {'id': 'postion_request'}
+        reply = self.req_send(msg)
+
+        return reply
+    
+    @magicgui(autocall=True, call_button=False)
+    def setstage(x:float, y:float, z:float, tilt:float):
+        """Move the stage to the specified position."""
+        msg = {'id': 'move_request'}
+
+        msg['x'] = x
+        msg['y'] = y
+        msg['z'] = z
+        msg['tilt'] = tilt
+
+        for key, value in msg.items():
+            if value is None:
+                msg.pop(key)
+
+        reply = self.req_send(msg)
+        logger.debug(f"Stage move: {reply}")
+        return reply
+    
 
 class Beam:
     def __init__(self):
@@ -36,34 +107,23 @@ class ScanSettings:
 
     
 
-@tomoacquire_hook(name="TEMScript")
-class TEMScriptMicroscope():
+@protocol_hook(name="Request Subscribe")
+class RequestSubscribeProtocol(ZMQManager):
     def __init__(self, address:str="192.168.0.1", request:int=50000, subscribe:int=50001):
-        self.state = State.IDLE
-        self.address = address
-        self.request_port = request
-        self.subscribe_port = subscribe
+        super().__init__(address, request, subscribe)
 
-        self.context = zmq.Context()
-        self.request_socket = self.context.socket(zmq.REQ)
-        self.request_socket.connect(f"tcp://{self.address}:{self.request_port}")
-        self.subscribe_socket = self.context.socket(zmq.SUB)
-        self.subscribe_socket.connect(f"tcp://{self.address}:{self.subscribe_port}")
-
-        self.magnification_options = []
-        self.detector_options = {}
-
-        receive_thread = Thread(target=self.receive_data, daemon=True)
-        receive_thread.start()
-
-    def connect(self):
-        msg = {'id': 'connect_request'}
-        self.request_socket.send_json(msg)
-        reply = self.request_socket.recv_json()
-        self.detector_options = reply.get('detectors', {})
-        self.state = State.CONNECTED
-        return reply
-
+    @magicgui(call_button="Create Microscope")
+    @classmethod
+    def new(cls, address:str="localhost",request:int=50000, subscribe:int=50001, save:bool=False, save_as:str='New Microscope'):
+        """Create a new instance of the RequestSubscribeProtocol."""
+        if save:
+            if name is 'New Microscope':
+                name = coolname.generate_slug(2)
+            else:
+                name = save_as
+            save_microscope(name, cls.__name__, address, request, subscribe)
+        return cls(address, request, subscribe)
+    
     def set_scan(self, isscan:bool=True, dwell_time:float=0.5, frame_size:int=1024, scan_time:float=0.63, detectors:list=[]):
         """set the scan parameters for the microscope"""
 
@@ -93,22 +153,6 @@ class TEMScriptMicroscope():
             self.state = State.CONNECTED
         return reply
 
-    def set_stage_positions(self, x=None, y=None, z=None, tilt=None):
-        """Move the stage to the specified position."""
-        msg = {'id': 'move_request'}
-
-        msg['x'] = x
-        msg['y'] = y
-        msg['z'] = z
-        msg['tilt'] = tilt
-
-        for key, value in msg.items():
-            if value is None:
-                msg.pop(key)
-
-        self.request_socket.send_json(msg)
-        reply = self.request_socket.recv_json()
-        logger.debug(f"Stage move: {reply}")
 
     def receive_data(self):
         poller = zmq.Poller()
@@ -123,14 +167,5 @@ class TEMScriptMicroscope():
                 # emit, process, or handle msg here
       
 
-    def get_stage_positions(self):
-        """get the current stage position"""
-        msg = {'id': 'postion_request'}
-        self.request_socket.send_json(msg)
-        reply = self.request_socket.recv_json()
-
-        reply.pop('id')
-        logger.debug(f"Stage position: {reply}")
-        return reply
 
 
