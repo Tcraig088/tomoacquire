@@ -1,6 +1,6 @@
 import json
 import pandas as pd
-from tomoacquire.registrations import TOMOACQUIRE_MICROSCOPES
+#from tomoacquire.registrations import TOMOACQUIRE_MICROSCOPES
 import importlib
 import inspect
 import os

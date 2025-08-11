@@ -4,10 +4,12 @@ import numpy as np
 import coolname
 from tomobase.log import logger
 from tomoacquire.hooks import protocol_hook
-from tomoacquire.microscopes import save_microscope
+#from tomoacquire.microscopes import save_microscope
 import enum
 from threading import Thread
 
+"""_summary_
+    
 class State(enum.Enum):
     IDLE = 0
     CONNECTED = 2
@@ -44,7 +46,7 @@ class ZMQManager():
         self.State = State.CONNECTED
 
     def reply_recv(self):
-        """Receive a message from the request socket and provides an error on timeout in case of hanging."""
+        
         try:
             msg = self.request_socket.recv_json()
         except zmq.Again as e:
@@ -65,7 +67,7 @@ class Stage(ZMQManager):
         self.defocus = 0.0
 
     def getstage(self):
-        """get the current stage position"""
+
         msg = {'id': 'postion_request'}
         reply = self.req_send(msg)
 
@@ -73,7 +75,7 @@ class Stage(ZMQManager):
     
     @magicgui(autocall=True, call_button=False)
     def setstage(x:float, y:float, z:float, tilt:float):
-        """Move the stage to the specified position."""
+
         msg = {'id': 'move_request'}
 
         msg['x'] = x
@@ -115,7 +117,7 @@ class RequestSubscribeProtocol(ZMQManager):
     @magicgui(call_button="Create Microscope")
     @classmethod
     def new(cls, address:str="localhost",request:int=50000, subscribe:int=50001, save:bool=False, save_as:str='New Microscope'):
-        """Create a new instance of the RequestSubscribeProtocol."""
+
         if save:
             if name is 'New Microscope':
                 name = coolname.generate_slug(2)
@@ -125,7 +127,7 @@ class RequestSubscribeProtocol(ZMQManager):
         return cls(address, request, subscribe)
     
     def set_scan(self, isscan:bool=True, dwell_time:float=0.5, frame_size:int=1024, scan_time:float=0.63, detectors:list=[]):
-        """set the scan parameters for the microscope"""
+
 
         msg = {'id': 'scan_request'}
         msg['isscan'] = isscan
@@ -139,7 +141,7 @@ class RequestSubscribeProtocol(ZMQManager):
         logger.debug(f"Scan settings: {reply}")
 
     def start_scan(self, isscan:bool=True, start:bool=True):
-        """Start or stop the scan."""
+
         msg = {'id': 'imaging_request'}
         msg['isscan'] = isscan
         msg['start'] = start
@@ -167,5 +169,5 @@ class RequestSubscribeProtocol(ZMQManager):
                 # emit, process, or handle msg here
       
 
-
+"""
 

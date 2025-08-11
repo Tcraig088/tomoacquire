@@ -11,3 +11,16 @@ def protocol_hook(name: str):
         cls.is_tomoacquire_protocol = True
         return cls
     return decorator
+
+def device_hook(name: str):
+    """a decorator used to mark a class as a device. The class is either a standard class used to define the device or a QWidget used to attach to napari. 
+    see the plugins tutorial for more information on how to use this decorator. returns a decorated class
+
+    Args:
+        name (str): the name of the device. Should be readable casing and spaces. 
+    """
+    def decorator(cls):
+        cls.tomobase_name = name
+        cls.is_tomoacquire_device = True
+        return cls
+    return decorator

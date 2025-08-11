@@ -1,6 +1,6 @@
 from threading import Thread, Lock
 import time
-from tomoacquire.hooks import tomoacquire_hook
+from tomoacquire.hooks import device_hook
 from tomobase.data import Sinogram, Image
 import numpy as np
 from IPython.display import display
@@ -14,7 +14,7 @@ from tomoacquire.states import ImagingState
 from qtpy.QtCore import Signal, QObject
 from tomobase.log import logger
 
-@tomoacquire_hook(name="FEI")
+
 class FEIMicroscope(QObject):
     scanwindow_updated = Signal()
     acqwindow_updated = Signal()
