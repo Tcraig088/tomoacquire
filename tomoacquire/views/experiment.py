@@ -9,7 +9,7 @@ from tomoacquire import config as mc
 from threading import Thread
 import numpy as np
 import stackview
-from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
+from tomobase.registrations.tiltschemes import tiltschemes_register
 from tomoacquire.states import MicroscopeState, ImagingState
 
 class ExperimentView():
@@ -17,7 +17,7 @@ class ExperimentView():
         self.controller = controller
 
     def show_adjust_settings(self):
-        tiltscheme_select = widgets.Dropdown(options = TOMOBASE_TILTSCHEMES, description='Tilt Scheme:')
+        tiltscheme_select = widgets.Dropdown(options = tiltschemes_register, description='Tilt Scheme:')
         tracking_select = widgets.Dropdown(options = ['None', 'Mastranade'], description='Tracking:')
     
         interem_tiltstep = widgets.FloatText(value=90, description='Interem Tilt Step:')

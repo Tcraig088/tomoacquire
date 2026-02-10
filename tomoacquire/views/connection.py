@@ -9,7 +9,7 @@ from tomoacquire import config as mc
 from threading import Thread
 import numpy as np
 import stackview
-from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
+from tomobase.registrations.tiltschemes import tiltschemes_register
 from tomoacquire.states import MicroscopeState, ImagingState
 
 class ConnectView():

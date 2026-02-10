@@ -9,7 +9,7 @@ from tomoacquire import config as mc
 from threading import Thread
 import numpy as np
 import stackview
-from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
+from tomobase.registrations.tiltschemes import tiltschemes_register
 from tomoacquire.states import MicroscopeState, ImagingState
 
 from tomoacquire.controllers.base import BaseController
@@ -31,7 +31,7 @@ class ExperimentController(BaseController):
         isblanked_select.observe(self._on_blank_change, names='value')
 
     def _show_experiment_settings(self):
-        tiltscheme = widgets.Dropdown(options = TOMOBASE_TILTSCHEMES.keys(), description='Tilt Scheme:')
+        tiltscheme = widgets.Dropdown(options = tiltschemes_register.keys(), description='Tilt Scheme:')
         tiltscheme_select = widgets.Button(description='Select')
         self.tiltscheme_group = widgets.HBox([tiltscheme, tiltscheme_select])
 
@@ -57,7 +57,7 @@ class ExperimentController(BaseController):
         self.experiment_group = widgets.VBox([self.control_group, self.experiment_type_group, self.options_group, confirm_button])
   
     def _on_confirm_experiment(self, b):
-        tiltscheme = TOMOBASE_TILTSCHEMES[self.tiltscheme_group.children[0].value].parsewidget(self.tiltwidget)
+        tiltscheme = tiltschemes_register[self.tiltscheme_group.children[0].value].parsewidget(self.tiltwidget)
         _dict = {
             'tiltscheme': tiltscheme,
             'magnifications': self.experiment_type_group.children[2].value,
@@ -77,7 +77,7 @@ class ExperimentController(BaseController):
         if self.istiltselected:
             self.tiltwidget.close()
         self.istiltselected = True
-        self.tiltwidget = TOMOBASE_TILTSCHEMES[self.tiltscheme_group.children[0].value].controller.TiltSchemeWidget()
+        self.tiltwidget = tiltschemes_register[self.tiltscheme_group.children[0].value].controller.TiltSchemeWidget()
         display(self.tiltwidget)
 
     def _on_magnification(self, b):

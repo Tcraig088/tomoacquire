@@ -9,7 +9,7 @@ from tomoacquire import config as mc
 from threading import Thread
 import numpy as np
 import stackview
-from tomobase.registrations.tiltschemes import TOMOBASE_TILTSCHEMES
+from tomobase.registrations.tiltschemes import tiltschemes_register
 from tomoacquire.states import MicroscopeState, ImagingState
 
 class Controller(Connection):
@@ -107,7 +107,7 @@ class Controller(Connection):
                 self._show_imaging_settings()
                 self.microscope.image.show()
 
-                tiltscheme = widgets.Dropdown(options = TOMOBASE_TILTSCHEMES.keys(), description='Tilt Scheme:')
+                tiltscheme = widgets.Dropdown(options = tiltschemes_register.keys(), description='Tilt Scheme:')
                 tiltscheme_select = widgets.Button(description='Select')
                 self.tiltscheme_group = widgets.HBox([tiltscheme, tiltscheme_select])
 
@@ -133,7 +133,7 @@ class Controller(Connection):
         if self.istiltselected:
             self.tiltwidget.close()
         self.istiltselected = True
-        self.tiltwidget = TOMOBASE_TILTSCHEMES[self.tiltscheme_group.children[0].value].controller.TiltSchemeWidget()
+        self.tiltwidget = tiltschemes_register[self.tiltscheme_group.children[0].value].controller.TiltSchemeWidget()
         display(self.tiltwidget)
 
 
