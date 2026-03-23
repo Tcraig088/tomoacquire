@@ -2,7 +2,7 @@ import json
 import os 
 import tomop
 
-from tomobase.log import logger
+from tomobase.core.log import logger
 
 class Microscope():
     _instance = None

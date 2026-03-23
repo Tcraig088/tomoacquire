@@ -2,7 +2,7 @@
 import enum
 import time
 import pandas as pd
-from tomobase.log import logger
+from tomobase.core.log import logger
 
 class ExperimentType(enum.Enum):
     NoExperiment = 0

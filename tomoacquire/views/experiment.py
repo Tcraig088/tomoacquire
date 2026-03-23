@@ -3,7 +3,7 @@ import enum
 from ipywidgets import widgets
 from IPython.display import display
 from threading import Thread
-from tomobase.log import logger
+from tomobase.core.log import logger
 from tomoacquire.scanwindow import ScanWindow
 from tomoacquire import config as mc
 from threading import Thread

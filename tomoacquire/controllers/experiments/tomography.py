@@ -1,4 +1,4 @@
-from tomobase.tiltschemes.tiltscheme import TiltScheme
+from tomobase.core.base_classes.tiltscheme import TiltScheme
 #from tomoacquire.controllers.calibrations.base import Calibration
 
 from time import time

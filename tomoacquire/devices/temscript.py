@@ -2,7 +2,7 @@ import zmq
 import time
 import numpy as np
 import coolname
-from tomobase.log import logger
+from tomobase.core.log import logger
 from tomoacquire.hooks import protocol_hook
 #from tomoacquire.microscopes import save_microscope
 import enum

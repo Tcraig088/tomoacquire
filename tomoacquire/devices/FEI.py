@@ -12,7 +12,7 @@ import enum
 import temscript
 from tomoacquire.states import ImagingState
 from qtpy.QtCore import Signal, QObject
-from tomobase.log import logger
+from tomobase.core.log import logger
 
 
 class FEIMicroscope(QObject):

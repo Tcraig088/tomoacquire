@@ -1,7 +1,7 @@
 import temscript
 import time
 import enum
-from tomobase.log import logger
+from tomobase.core.log import logger
 from tomoacquire.scanwindow import ScanWindow
 from threading import Thread
 import numpy as np
