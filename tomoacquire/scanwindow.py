@@ -4,7 +4,7 @@ from tomobase import TOMOBASE_DATATYPES
 import stackview
 
 
-class ScanWindow(tomobase.data.Image):
+class ScanWindow(tomobase.data_classes.Image):
     def __init__(self, data, pixelsize=1.0):
         super().__init__(data, pixelsize)
 

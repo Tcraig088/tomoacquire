@@ -1,7 +1,7 @@
 from threading import Thread, Lock
 import time
 from tomoacquire.hooks import device_hook
-from tomobase.data import Sinogram, Image
+from tomobase.core.data_classes import Sinogram, Image
 import numpy as np
 from IPython.display import display
 from ipywidgets import widgets
