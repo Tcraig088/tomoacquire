@@ -4,15 +4,15 @@ from ipywidgets import widgets
 from IPython.display import display
 from threading import Thread
 from tomobase.core.log import logger
-from tomoacquire.scanwindow import ScanWindow
-from tomoacquire import config as mc
+from submodules.tomoacquire.tomoacquire.depreciated.scanwindow import ScanWindow
+from submodules.tomoacquire.tomoacquire.depreciated import config as mc
 from threading import Thread
 import numpy as np
 import stackview
 from tomobase.registrations.tiltschemes import tiltschemes_register
 
 from tomoacquire.controllers.base import BaseController
-from tomoacquire.states import MicroscopeState, ImagingState
+from submodules.tomoacquire.tomoacquire.depreciated.states import MicroscopeState, ImagingState
 
 class ConnectionController(BaseController):
     def __init__(self):

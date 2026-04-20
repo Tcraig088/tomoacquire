@@ -1,6 +1,6 @@
 from threading import Thread, Lock
 import time
-from tomoacquire.hooks import device_hook
+from submodules.tomoacquire.tomoacquire.depreciated.hooks import device_hook
 from tomobase.core.data_classes import Sinogram, Image
 import numpy as np
 from IPython.display import display
@@ -10,7 +10,7 @@ import time
 import enum
 
 import temscript
-from tomoacquire.states import ImagingState
+from submodules.tomoacquire.tomoacquire.depreciated.states import ImagingState
 from qtpy.QtCore import Signal, QObject
 from tomobase.core.log import logger
 

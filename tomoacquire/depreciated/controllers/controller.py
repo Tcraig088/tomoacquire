@@ -1,4 +1,4 @@
-from tomoacquire.states import MicroscopeState
+from submodules.tomoacquire.tomoacquire.depreciated.states import MicroscopeState
 from qtpy.QtCore import Signal, QObject
 # singleton class 
 class TomoacquireController(object):

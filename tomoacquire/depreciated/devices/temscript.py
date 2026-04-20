@@ -3,7 +3,7 @@ import time
 import numpy as np
 import coolname
 from tomobase.core.log import logger
-from tomoacquire.hooks import protocol_hook
+from submodules.tomoacquire.tomoacquire.depreciated.hooks import protocol_hook
 #from tomoacquire.microscopes import save_microscope
 import enum
 from threading import Thread

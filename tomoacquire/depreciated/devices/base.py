@@ -1,5 +1,5 @@
 import zmq
-from tomoacquire import config
+from submodules.tomoacquire.tomoacquire.depreciated import config
 
 class DeviceController:
     def __init__(self, name= 'New Microscope', address='localhost', request=50000):

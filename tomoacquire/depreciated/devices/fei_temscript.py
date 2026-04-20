@@ -1,6 +1,6 @@
 
 from tomoacquire.devices.base import DeviceController
-from tomoacquire.hooks import device_hook
+from submodules.tomoacquire.tomoacquire.depreciated.hooks import device_hook
 
 @device_hook(name="FEI Microscope")
 class FEIController(DeviceController):

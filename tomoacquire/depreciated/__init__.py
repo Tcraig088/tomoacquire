@@ -1,2 +1,2 @@
 from tomoacquire.controllers.base import Controller, ControllerTest
-from tomoacquire import views
+from submodules.tomoacquire.tomoacquire.depreciated import views
